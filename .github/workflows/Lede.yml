@@ -148,7 +148,7 @@ jobs:
         
     - name: 编译信息
       continue-on-error: true
-      if: env.COMPILATION_INFORMATION == 'true'
+      if: ${{ env.COMPILATION_INFORMATION == 'true' }}
       uses: ranqingwen/common@message
     
     - name: 清理releases和workflows
