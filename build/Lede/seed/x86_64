@@ -349,7 +349,6 @@ CONFIG_PACKAGE_luci-app-control-webrestriction=y
 CONFIG_PACKAGE_luci-app-diskman=y
 CONFIG_PACKAGE_luci-app-dockerman=y
 CONFIG_PACKAGE_luci-app-lucky=y
-# CONFIG_PACKAGE_luci-app-mosdns is not set
 CONFIG_PACKAGE_luci-app-mwan3=y
 CONFIG_PACKAGE_luci-app-netdata=y
 CONFIG_PACKAGE_luci-app-oaf=y
@@ -369,7 +368,7 @@ CONFIG_PACKAGE_luci-app-quickstart=y
 CONFIG_PACKAGE_luci-app-ramfree=y
 # CONFIG_PACKAGE_luci-app-ssr-plus is not set
 # CONFIG_PACKAGE_luci-app-ssr-plus_Iptables_Transparent_Proxy is not set
-# CONFIG_PACKAGE_luci-app-ssr-plus_Nftables_Transparent_Proxy= is not set
+CONFIG_PACKAGE_luci-app-ssr-plus_Nftables_Transparent_Proxy=y
 CONFIG_PACKAGE_luci-app-store=y
 CONFIG_PACKAGE_luci-app-uhttpd=y
 # CONFIG_PACKAGE_luci-app-vlmcsd is not set
@@ -378,7 +377,6 @@ CONFIG_PACKAGE_luci-app-zerotier=y
 CONFIG_PACKAGE_luci-i18n-control-webrestriction-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-diskman-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-lucky-zh-cn=y
-# CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn is not set
 CONFIG_PACKAGE_luci-i18n-mwan3-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-netdata-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-oaf-zh-cn=y
@@ -394,6 +392,7 @@ CONFIG_PACKAGE_luci-lib-taskd=y
 CONFIG_PACKAGE_luci-lib-xterm=y
 CONFIG_PACKAGE_lucky=y
 CONFIG_PACKAGE_mdadm=y
+# CONFIG_PACKAGE_mosdns is not set
 CONFIG_PACKAGE_msgpack-c=y
 CONFIG_PACKAGE_mwan3=y
 CONFIG_PACKAGE_n2n=y
