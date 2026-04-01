@@ -45,10 +45,11 @@ export Password_free_login="1"               # 设置首次登录后台密码为
 # 增加AdGuardHome插件和核心
 export AdGuardHome_Core="0"                  # 编译固件时自动增加AdGuardHome插件和AdGuardHome插件核心,需要注意的是一个核心20多MB的,小闪存机子搞不来(1为启用命令,填0为不作修改)
 # 增加应用过滤插件
-export Install_OAF="1"                       # 是否安装应用过滤(OAF)插件 (1为安装, 0为不安装)
+# export Install_OAF="1"                       # 是否安装应用过滤(OAF)插件 (1为安装, 0为不安装)
 
-# 增加Argon_Config插件
-export Install_Argon_Config="1"              # 是否安装Argon配置插件 (1为安装, 0为不安装)
+export Install_Argon_Config="1"              # 安装 Argon 主题设置插件 (1为启用, 0为关闭)
+export Install_iStore="1"                    # 安装 iStore 商店 (1为启用, 0为关闭)
+
 
 # 开启NTFS格式盘挂载
 export Automatic_Mount_Settings="1"          # 编译时加入开启NTFS格式盘挂载的所需依赖(1为启用命令,填0为不作修改)
