@@ -9,7 +9,7 @@ on:
     branches:
       - main
     paths:
-      - 'build/Lede/relevance/start'
+      - 'buconfig'
 
 env:
   GIT_REPOSITORY: ${{github.repository}}
@@ -23,14 +23,14 @@ jobs:
   build:
     name: 编译 "${{matrix.target}}"
     runs-on: ubuntu-22.04
-    if: ${{ github.event.repository.owner.id == github.event.sender.id }}
+    if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}
     
     env:
       FOLDER_NAME: ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
-       target: [Lede]
+       target: [Immortalwrt]
 
     steps:
     - name: 释放Ubuntu磁盘空间
@@ -92,7 +92,7 @@ jobs:
       run: |
         cd openwrt
         make download -j8
-
+    
     - name: 开始编译固件
       id: compile
       if: steps.package.outcome == 'success'
@@ -119,21 +119,4 @@ jobs:
         
     - name: 上传,发布,信息通知
       if: steps.compile.outcome == 'success'
-      uses: ncipollo/release-action@v1
-      with:
-        name: ${{ env.SOURCE }}-${{ env.LUCI_EDITION }}
-        tag: ${{ env.SOURCE }}
-        token: ${{ secrets.REPO_TOKEN }}
-        allowUpdates: true
-        body: |
-          ### 📒 固件信息
-          - 💄 LUCI版本：${{ env.LUCI_EDITION }}
-          - 🚀 内核版本：${{ env.LINUX_KERNEL }}
-          - 💻 平台架构：${{ env.TARGET_PROFILE }}
-          - 🌻 源码作者：${{ env.SOURCE_OWNER }}
-          - 💝 源码分支：${{ env.REPO_BRANCH }}
-          - 🌐 默认地址：192.168.23.254
-          - 🔑 默认密码：空
-          - 🔴 固件大小：Kernel=32MB，rootfs=968MB
-          - 🧊 编译时间：${{ env.CONFIG_DATE }}         
-        artifacts: "${{ env.FIRMWARE_PATH }}/*"
+      uses: ranqingwen/common@uploads
