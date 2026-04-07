@@ -6,7 +6,7 @@
 
 
 # 后台IP设置
-export Ipv4_ipaddr="192.168.23.254"            # 修改openwrt后台地址(填0为关闭)
+export Ipv4_ipaddr="192.168.23.253"            # 修改openwrt后台地址(填0为关闭)
 export Netmask_netm="255.255.255.0"         # IPv4 子网掩码（默认：255.255.255.0）(填0为不作修改)
 export Op_name="OpenWrt"                # 修改主机名称为Lede(填0为不作修改)
 
@@ -44,11 +44,10 @@ export Password_free_login="1"               # 设置首次登录后台密码为
 
 # 增加AdGuardHome插件和核心
 export AdGuardHome_Core="0"                  # 编译固件时自动增加AdGuardHome插件和AdGuardHome插件核心,需要注意的是一个核心20多MB的,小闪存机子搞不来(1为启用命令,填0为不作修改)
-# 增加应用过滤插件
-# export Install_OAF="1"                       # 是否安装应用过滤(OAF)插件 (1为安装, 0为不安装)
 
 export Install_Argon_Config="1"              # 安装 Argon 主题设置插件 (1为启用, 0为关闭)
 export Install_iStore="1"                    # 安装 iStore 商店 (1为启用, 0为关闭)
+export Install_Advanced="1"                  # 安装 高级设置 插件 (1为启用, 0为关闭)
 
 
 # 开启NTFS格式盘挂载
@@ -73,15 +72,15 @@ export kernel_usage="stable"
 
 
 # 修改插件名字
-grep -rl '"终端"' . | xargs -r sed -i 's?"终端"?"TTYD"?g'
-grep -rl '"TTYD 终端"' . | xargs -r sed -i 's?"TTYD 终端"?"TTYD"?g'
-grep -rl '"网络存储"' . | xargs -r sed -i 's?"网络存储"?"NAS"?g'
-grep -rl '"实时流量监测"' . | xargs -r sed -i 's?"实时流量监测"?"流量"?g'
-grep -rl '"KMS 服务器"' . | xargs -r sed -i 's?"KMS 服务器"?"KMS激活"?g'
-grep -rl '"USB 打印服务器"' . | xargs -r sed -i 's?"USB 打印服务器"?"打印服务"?g'
-grep -rl '"Web 管理"' . | xargs -r sed -i 's?"Web 管理"?"Web管理"?g'
-grep -rl '"管理权"' . | xargs -r sed -i 's?"管理权"?"改密码"?g'
-grep -rl '"带宽监控"' . | xargs -r sed -i 's?"带宽监控"?"监控"?g'
+# grep -rl '"终端"' . | xargs -r sed -i 's?"终端"?"TTYD"?g'
+# grep -rl '"TTYD 终端"' . | xargs -r sed -i 's?"TTYD 终端"?"TTYD"?g'
+# grep -rl '"网络存储"' . | xargs -r sed -i 's?"网络存储"?"NAS"?g'
+# grep -rl '"实时流量监测"' . | xargs -r sed -i 's?"实时流量监测"?"流量"?g'
+# grep -rl '"KMS 服务器"' . | xargs -r sed -i 's?"KMS 服务器"?"KMS激活"?g'
+# grep -rl '"USB 打印服务器"' . | xargs -r sed -i 's?"USB 打印服务器"?"打印服务"?g'
+# grep -rl '"Web 管理"' . | xargs -r sed -i 's?"Web 管理"?"Web管理"?g'
+# grep -rl '"管理权"' . | xargs -r sed -i 's?"管理权"?"改密码"?g'
+# grep -rl '"带宽监控"' . | xargs -r sed -i 's?"带宽监控"?"监控"?g'
 
 
 # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间(根据编译机型变化,自行调整删除名称)
