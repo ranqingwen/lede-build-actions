@@ -1,0 +1,251 @@
+#!/bin/bash
+#
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# File name: diy-part2.sh
+# Description: OpenWrt DIY script part 2 (After Update feeds)
+#
+
+echo "开始 DIY2 配置……"
+echo "========================="
+# 修改主机名字，修改你喜欢的就行（不能纯数字或者使用中文）
+sed -i "/uci commit system/i\uci set system.@system[0].hostname='Lede'" package/lean/default-settings/files/zzz-default-settings
+sed -i "s/hostname='.*'/hostname='Lede'/g" ./package/base-files/files/bin/config_generate
+
+# 默认地址
+sed -i 's/192.168.1.1/192.168.23.254/g' package/base-files/files/bin/config_generate
+
+# 最大连接数修改为65535
+sed -i '/customized in this file/a net.netfilter.nf_conntrack_max=65535' package/base-files/files/etc/sysctl.conf
+
+# 设置密码为空（安装固件时无需密码登陆，然后自己修改想要的密码）
+sed -i '/$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF./d' package/lean/default-settings/files/zzz-default-settings
+
+# 调整 x86 型号只显示 CPU 型号
+sed -i 's/${g}.*/${a}${b}${c}${d}${e}${f}${hydrid}/g' package/lean/autocore/files/x86/autocore
+
+# 设置ttyd免帐号登录
+sed -i 's/\/bin\/login/\/bin\/login -f root/' feeds/packages/utils/ttyd/files/ttyd.config
+
+# 默认 shell 为 bash
+sed -i 's/\/bin\/ash/\/bin\/bash/g' package/base-files/files/etc/passwd
+
+# 设置argon为默认主题
+sed -i '/set luci.main.mediaurlbase=\/luci-static\/bootstrap/d' feeds/luci/themes/luci-theme-bootstrap/root/etc/uci-defaults/30_luci-theme-bootstrap
+sed -i 's/Bootstrap theme/Argon theme/g' feeds/luci/collections/*/Makefile
+sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/*/Makefile
+
+# 更改argon主题背景
+cp -f $GITHUB_WORKSPACE/personal/bg1.jpg package/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+
+# =========================================================
+# 修复 argon-config 报错 data[2].map is not a function
+# =========================================================
+echo ">>> 创建 Argon 主题 background 空文件夹防止 JS 报错..."
+mkdir -p package/luci-theme-argon/htdocs/luci-static/argon/background
+
+# =========================================================
+# 1. 统一变量定义
+# =========================================================
+build_date=$(date +%Y.%m.%d)
+build_name="24.10"
+
+# 动态抓取源码原始修订号 (R26.xx.xx)
+lean_r_ver=$(grep -oE "R[0-9]{2}\.[0-9]{2}\.[0-9]{2}" package/lean/default-settings/files/zzz-default-settings | head -n1)
+[ -z "$lean_r_ver" ] && lean_r_ver="R2026.02.20"
+
+# =========================================================
+# 2. 彻底解决显示后缀
+# =========================================================
+# 【修复系统描述 (前缀)】
+# 保证前半截显示为：Lede by ranqw R2026.04.23 @OpenWrt R26.02.20
+custom_description="Lede by ranqw R${build_date} @OpenWrt ${lean_r_ver}"
+sed -i "s/DISTRIB_DESCRIPTION='.*'/DISTRIB_DESCRIPTION='${custom_description}'/g" package/lean/default-settings/files/zzz-default-settings
+# 将系统自带的 REVISION 置空，防止系统在后面画蛇添足再拼一个 R26.02.20
+sed -i "s/DISTRIB_REVISION='.*'/DISTRIB_REVISION=''/g" package/lean/default-settings/files/zzz-default-settings
+
+# 【终极截断：开机物理覆盖】
+# 源码 Make 机制太过霸道，会导致源文件在打包阶段被还原。
+# 利用 uci-defaults 在系统开机挂载可写分区后，强行整件覆写。
+mkdir -p package/base-files/files/etc/uci-defaults
+cat << EOF > package/base-files/files/etc/uci-defaults/99-fix-luci-version
+#!/bin/sh
+# 暴力覆盖 ucode 架构 (将值全部塞给 revision，branch 置空，防截断)
+if [ -f /usr/share/ucode/luci/version.uc ]; then
+    echo "export const revision = '', branch = 'Lede - ${build_name}';" > /usr/share/ucode/luci/version.uc
+fi
+# 暴力覆盖 lua 架构 (向下兼容)
+if [ -f /usr/lib/lua/luci/version.lua ]; then
+    sed -i 's/luciname.*/luciname    = "Lede"/g' /usr/lib/lua/luci/version.lua
+    sed -i 's/luciversion.*/luciversion = "${build_name}"/g' /usr/lib/lua/luci/version.lua
+fi
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-fix-luci-version
+
+# =========================================================
+# Argon 主题页脚动态渲染 (保持你之前的逻辑不变)
+# =========================================================
+#cp -f $GITHUB_WORKSPACE/personal/argon/footer.ut package/luci-theme-argon/ucode/template/themes/argon/footer.ut
+#cp -f $GITHUB_WORKSPACE/personal/argon/footer_login.ut package/luci-theme-argon/ucode/template/themes/argon/footer_login.ut
+
+# =========================================================
+# 强制替换 Argon 主题页脚 (Lua 架构路径校准)
+# =========================================================
+
+# 你的源码路径确认是：package/luci-theme-argon/luasrc/view/themes/argon/
+ARGON_DIR="package/luci-theme-argon/luasrc/view/themes/argon"
+
+# 强行创建主题模板目录
+mkdir -p $ARGON_DIR
+
+# 强行覆盖 footer.htm
+cp -f $GITHUB_WORKSPACE/personal/argon/footer.htm $ARGON_DIR/footer.htm
+
+# 修改欢迎banner
+cp -f $GITHUB_WORKSPACE/personal/banner package/base-files/files/etc/banner
+
+# =========================================================
+# 修复 netdata 不会自动启动和缺失 init.d 脚本的问题
+# =========================================================
+echo ">>> Fix netdata init.d & enable service"
+
+# 1. 强行将启动脚本从插件源码复制到 base-files 中，确保它一定会被打包进固件
+# 注意：你在 diy-part1.sh 中克隆到了 package/luci-app-netdata
+mkdir -p package/base-files/files/etc/init.d
+if [ -f package/luci-app-netdata/root/etc/init.d/netdata ]; then
+  cp -f package/luci-app-netdata/root/etc/init.d/netdata package/base-files/files/etc/init.d/netdata
+  chmod +x package/base-files/files/etc/init.d/netdata
+  echo "成功将 netdata 启动脚本注入到 base-files"
+else
+  echo "警告: 未能在插件源码目录找到 netdata 启动脚本，请检查 diy-part1.sh 的克隆路径"
+fi
+
+# 2. 预置 netdata 配置文件
+mkdir -p package/base-files/files/etc/netdata
+cat << 'EOF' > package/base-files/files/etc/netdata/netdata.conf
+[global]
+    run as user = root
+    memory mode = ram
+[cloud]
+    enabled = no
+EOF
+
+# 3. 改进 uci-defaults 脚本，确保在真实环境下（路由器开机后）执行注册
+mkdir -p package/base-files/files/etc/uci-defaults
+cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-netdata
+#!/bin/sh
+# 检查脚本是否存在并具备执行权限
+if [ -x /etc/init.d/netdata ]; then
+  /etc/init.d/netdata enable
+  /etc/init.d/netdata restart
+fi
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-netdata
+
+# 修复上游仓库不稳定造成ustream-ssl报错问题
+find . -type f \( -name "Makefile" -o -name "*.mk" \) -exec sed -i 's#https://git.openwrt.org/#https://github.com/openwrt/#g' {} \;
+if [ -f "$USTREAM_MK" ]; then
+  sed -i 's/^PKG_SOURCE_PROTO.*/PKG_SOURCE_PROTO:=git/' $USTREAM_MK
+  sed -i 's#https://github.com/openwrt/project/ustream-ssl.git#https://github.com/openwrt/ustream-ssl.git#g' $USTREAM_MK
+  sed -i 's#https://git.openwrt.org/project/ustream-ssl.git#https://github.com/openwrt/ustream-ssl.git#g' $USTREAM_MK
+  sed -i '/^PKG_SOURCE:=/d' $USTREAM_MK
+  sed -i '/^PKG_HASH:=/d'   $USTREAM_MK
+fi
+rm -rf dl/ustream-ssl-*
+rm -rf build_dir/target-*/ustream-ssl-*
+
+# =========================================================
+# 4. 彻底解决 fchomo 和 nikki 导致的递归依赖循环
+# =========================================================
+echo ">>> 正在强制清理冲突插件..."
+
+# 1. 使用 find 命令全局查找并删除，确保无论是哪个 feed 里的都被删掉
+find ./feeds/ -type d -name "luci-app-fchomo" | xargs rm -rf
+find ./feeds/ -type d -name "luci-app-nikki" | xargs rm -rf
+find ./feeds/ -type d -name "nikki" | xargs rm -rf
+find ./package/feeds/ -type d -name "luci-app-fchomo" | xargs rm -rf
+find ./package/feeds/ -type d -name "luci-app-nikki" | xargs rm -rf
+find ./package/feeds/ -type d -name "nikki" | xargs rm -rf
+
+# 2. 关键一步：强制删除 tmp 目录，清除已损坏的依赖索引
+# 如果不删 tmp，即便删了插件，系统可能还会报递归错误
+rm -rf tmp
+
+echo ">>> 冲突插件清理完成。"
+
+# =========================================================
+# 5. 修复 iStore 简体中文语言包缺失问题
+# =========================================================
+echo ">>> 添加 iStore 语言包开机修复脚本..."
+mkdir -p package/base-files/files/etc/uci-defaults
+cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-fix-istore-i18n
+#!/bin/sh
+
+I18N_DIR="/usr/lib/lua/luci/i18n"
+
+# 检查是否存在简体中文包
+if [ ! -f "$I18N_DIR/iStore.zh-cn.lmo" ]; then
+    # 如果不存在，且存在繁体中文包，则复制并重命名
+    if [ -f "$I18N_DIR/iStore.zh-tw.lmo" ]; then
+        cp -f "$I18N_DIR/iStore.zh-tw.lmo" "$I18N_DIR/iStore.zh-cn.lmo"
+    fi
+fi
+
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-fix-istore-i18n
+
+# 移除 default-settings 中的 UPnP
+
+find package/feeds -type f | xargs -r sed -i -e '/luci-app-upnp/d' -e '/luci-i18n-upnp/d' -e '/miniupnpd/d'
+sed -i '/luci-app-upnp/d' package/Makefile
+sed -i '/luci-i18n-upnp/d' package/Makefile
+sed -i '/miniupnpd/d' package/Makefile
+
+
+# 修复 default-settings 问题
+echo ">>> Purge default-settings (all variants)"
+find package/feeds -maxdepth 2 -type d -name "default-settings*" -exec rm -rf {} +
+rm -rf package/default-settings*
+
+mkdir -p package/base-files/files/etc/uci-defaults
+cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-system
+#!/bin/sh
+uci set system.@system[0].hostname='Lede'
+uci set system.@system[0].zonename='Asia/Shanghai'
+uci set system.@system[0].timezone='CST-8'
+uci -q delete system.ntp.server
+uci add_list system.ntp.server='ntp.aliyun.com'
+uci add_list system.ntp.server='time1.cloud.tencent.com'
+uci add_list system.ntp.server='time.apple.com'
+uci add_list system.ntp.server='time.windows.com'
+uci commit system
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-system
+cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-luci
+#!/bin/sh
+uci set luci.main.lang='zh_cn'
+uci commit luci
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-luci
+
+find . -type f \( -name "Makefile" -o -name "*.mk" \) \
+-exec sed -i 's#https://git.openwrt.org/#https://github.com/openwrt/#g' {} \;
+
+rm -rf dl/ustream-ssl-* build_dir/target-*/ustream-ssl-*
+find package -type f | xargs sed -i \
+  -e '/luci-app-upnp/d' \
+  -e '/luci-i18n-upnp/d' \
+  -e '/miniupnpd/d' || true
+
+
+echo "========================="
+echo " DIY2 配置完成……"
